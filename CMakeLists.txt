@@ -26,10 +26,6 @@ set(BREAKPAD_COMMON_SRC
     ${COMMON_PATH}/scoped_ptr.h
     ${COMMON_PATH}/simple_string_dictionary.cc
     ${COMMON_PATH}/simple_string_dictionary.h
-    ${COMMON_PATH}/stabs_reader.cc
-    ${COMMON_PATH}/stabs_reader.h
-    ${COMMON_PATH}/stabs_to_module.cc
-    ${COMMON_PATH}/stabs_to_module.h
     ${COMMON_PATH}/string_conversion.cc
     ${COMMON_PATH}/string_conversion.h
     ${COMMON_PATH}/symbol_data.h
@@ -37,30 +33,6 @@ set(BREAKPAD_COMMON_SRC
     ${COMMON_PATH}/test_assembler.h
     ${COMMON_PATH}/unordered.h
     ${COMMON_PATH}/using_std_string.h
-    ${COMMON_PATH}/dwarf/bytereader-inl.h
-    ${COMMON_PATH}/dwarf/bytereader.cc
-    ${COMMON_PATH}/dwarf/bytereader.h
-    ${COMMON_PATH}/dwarf/cfi_assembler.cc
-    ${COMMON_PATH}/dwarf/cfi_assembler.h
-    ${COMMON_PATH}/dwarf/dwarf2diehandler.cc
-    ${COMMON_PATH}/dwarf/dwarf2diehandler.h
-    ${COMMON_PATH}/dwarf/dwarf2enums.h
-    ${COMMON_PATH}/dwarf/dwarf2reader.cc
-    ${COMMON_PATH}/dwarf/dwarf2reader.h
-    ${COMMON_PATH}/dwarf/dwarf2reader_test_common.h
-    ${COMMON_PATH}/dwarf/elf_reader.cc
-    ${COMMON_PATH}/dwarf/elf_reader.h
-    ${COMMON_PATH}/dwarf/functioninfo.cc
-    ${COMMON_PATH}/dwarf/functioninfo.h
-    ${COMMON_PATH}/dwarf/line_state_machine.h
-    ${COMMON_PATH}/dwarf/types.h
-    ${COMMON_PATH}/dwarf_cfi_to_module.cc
-    ${COMMON_PATH}/dwarf_cfi_to_module.h
-    ${COMMON_PATH}/dwarf_cu_to_module.cc
-    ${COMMON_PATH}/dwarf_cu_to_module.h
-    ${COMMON_PATH}/dwarf_line_to_module.cc
-    ${COMMON_PATH}/dwarf_line_to_module.h
-
 )
 
 # set(BREAKPAD_COMMON_ANDROID_SRC
@@ -80,6 +52,10 @@ set(BREAKPAD_COMMON_SRC
 # )
 
 set(BREAKPAD_COMMON_LINUX_SRC
+    ${COMMON_PATH}/stabs_reader.cc
+    ${COMMON_PATH}/stabs_reader.h
+    ${COMMON_PATH}/stabs_to_module.cc
+    ${COMMON_PATH}/stabs_to_module.h
     ${COMMON_PATH}/linux/crc32.cc
     ${COMMON_PATH}/linux/crc32.h
     ${COMMON_PATH}/linux/dump_symbols.cc
@@ -112,6 +88,29 @@ set(BREAKPAD_COMMON_LINUX_SRC
     ${COMMON_PATH}/linux/safe_readlink.h
     ${COMMON_PATH}/linux/synth_elf.cc
     ${COMMON_PATH}/linux/synth_elf.h
+    ${COMMON_PATH}/dwarf/bytereader-inl.h
+    ${COMMON_PATH}/dwarf/bytereader.cc
+    ${COMMON_PATH}/dwarf/bytereader.h
+    ${COMMON_PATH}/dwarf/cfi_assembler.cc
+    ${COMMON_PATH}/dwarf/cfi_assembler.h
+    ${COMMON_PATH}/dwarf/dwarf2diehandler.cc
+    ${COMMON_PATH}/dwarf/dwarf2diehandler.h
+    ${COMMON_PATH}/dwarf/dwarf2enums.h
+    ${COMMON_PATH}/dwarf/dwarf2reader.cc
+    ${COMMON_PATH}/dwarf/dwarf2reader.h
+    ${COMMON_PATH}/dwarf/dwarf2reader_test_common.h
+    ${COMMON_PATH}/dwarf/elf_reader.cc
+    ${COMMON_PATH}/dwarf/elf_reader.h
+    ${COMMON_PATH}/dwarf/functioninfo.cc
+    ${COMMON_PATH}/dwarf/functioninfo.h
+    ${COMMON_PATH}/dwarf/line_state_machine.h
+    ${COMMON_PATH}/dwarf/types.h
+    ${COMMON_PATH}/dwarf_cfi_to_module.cc
+    ${COMMON_PATH}/dwarf_cfi_to_module.h
+    ${COMMON_PATH}/dwarf_cu_to_module.cc
+    ${COMMON_PATH}/dwarf_cu_to_module.h
+    ${COMMON_PATH}/dwarf_line_to_module.cc
+    ${COMMON_PATH}/dwarf_line_to_module.h
 )
 
 # set(BREAKPAD_COMMON_MAC_SRC
@@ -155,7 +154,7 @@ set(BREAKPAD_COMMON_LINUX_SRC
 #     ${COMMON_PATH}/solaris/message_output.h
 # )
 
-set(BREAKPAD_COMMON_WINDOWS_SRC
+set(BREAKPAD_COMMON_MSVC_SRC
     ${COMMON_PATH}/windows/dia_util.cc
     ${COMMON_PATH}/windows/dia_util.h
     ${COMMON_PATH}/windows/guid_string.cc
@@ -183,11 +182,24 @@ if(UNIX)
 #         ${BREAKPAD_COMMON_MAC_SRC}
 #     )
 #     target_compile_options(breakpad-common PUBLIC -DHAVE_MACH_O_NLIST_H)
-elseif(WIN32)
+elseif(MSVC)
+    set(DIA_SDK_INCLUDES "$ENV{VSINSTALLDIR}/DIA SDK/include")
+
     add_library(breakpad-common
         ${BREAKPAD_COMMON_SRC}
-        ${BREAKPAD_COMMON_WINDOWS_SRC}
+        ${BREAKPAD_COMMON_MSVC_SRC}
     )
+
+    target_include_directories(breakpad-common PUBLIC ${DIA_SDK_INCLUDES})
+    target_compile_options(breakpad-common PUBLIC -DUNICODE)
+
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        link_directories("$ENV{VSINSTALLDIR}/DIA SDK/lib/amd64")
+    else()
+        link_directories("$ENV{VSINSTALLDIR}/DIA SDK/lib")
+    endif()
+
+    target_link_libraries(breakpad-common diaguids imagehlp)
 endif()
 
 target_include_directories(breakpad-common PUBLIC ${SRC_PATH})
@@ -338,8 +350,8 @@ target_link_libraries(minidump_stackwalk breakpad-processor)
 
 set(CLIENT_PATH ${SRC_PATH}/client)
 
-if(WIN32)
-    add_library(breakpad_client
+if(MSVC)
+    add_library(breakpad-client
         ${CLIENT_PATH}/windows/common/auto_critical_section.h
         ${CLIENT_PATH}/windows/common/ipc_protocol.h
         ${CLIENT_PATH}/windows/crash_generation/client_info.cc
