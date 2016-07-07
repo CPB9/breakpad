@@ -10,11 +10,14 @@ set(SRC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(COMMON_PATH ${SRC_PATH}/common)
 
+add_library(breakpad-utf8
+    ${COMMON_PATH}/convert_UTF.c
+    ${COMMON_PATH}/convert_UTF.h
+)
+
 set(BREAKPAD_COMMON_SRC
     ${COMMON_PATH}/basictypes.h
     ${COMMON_PATH}/byte_cursor.h
-    ${COMMON_PATH}/convert_UTF.c
-    ${COMMON_PATH}/convert_UTF.h
     ${COMMON_PATH}/language.cc
     ${COMMON_PATH}/language.h
     ${COMMON_PATH}/md5.cc
@@ -176,6 +179,7 @@ if(UNIX)
         ${BREAKPAD_COMMON_LINUX_SRC}
     )
     target_compile_options(breakpad-common PUBLIC -DHAVE_A_OUT_H)
+    target_compile_options(breakpad-common PRIVATE -std=c++11)
 # elseif(APPLE)
 #     add_library(breakpad-common
 #         ${BREAKPAD_COMMON_SRC}
@@ -202,6 +206,7 @@ elseif(MSVC)
     target_link_libraries(breakpad-common diaguids imagehlp)
 endif()
 
+target_link_libraries(breakpad-common breakpad-utf8)
 target_include_directories(breakpad-common PUBLIC ${SRC_PATH})
 
 set(LIBDISASM_PATH ${SRC_PATH}/third_party/libdisasm)
@@ -340,6 +345,9 @@ add_library(breakpad-processor
 )
 
 target_include_directories(breakpad-processor PUBLIC ${SRC_PATH})
+if(UNIX)
+    target_compile_options(breakpad-processor PRIVATE -std=c++11)
+endif()
 target_link_libraries(breakpad-processor breakpad-common disasm)
 
 add_executable(minidump_dump ${PROCESSOR_PATH}/minidump_dump.cc)
@@ -409,6 +417,7 @@ else()
         ${CLIENT_PATH}/minidump_file_writer-inl.h
     )
 
+    target_compile_options(breakpad-client PRIVATE -std=c++11)
     add_executable(dump_syms ${SRC_PATH}/tools/linux/dump_syms/dump_syms.cc)
     target_link_libraries(dump_syms breakpad-common)
 endif()
