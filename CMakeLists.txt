@@ -198,11 +198,14 @@ elseif(MSVC)
     target_compile_options(breakpad-common PUBLIC -DUNICODE)
 
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        link_directories("$ENV{VSINSTALLDIR}/DIA SDK/lib/amd64")
+        set(DIAGUIDS_PATH "$ENV{VSINSTALLDIR}/DIA SDK/lib/amd64")
     else()
-        link_directories("$ENV{VSINSTALLDIR}/DIA SDK/lib")
+        set(DIAGUIDS_PATH "$ENV{VSINSTALLDIR}/DIA SDK/lib")
     endif()
-
+    
+    add_library(diaguids STATIC IMPORTED)
+    set_property(TARGET diaguids PROPERTY IMPORTED_LOCATION ${DIAGUIDS_PATH}/diaguids.lib)
+    
     target_link_libraries(breakpad-common diaguids imagehlp)
 endif()
 
